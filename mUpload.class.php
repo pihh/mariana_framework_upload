@@ -18,6 +18,11 @@
 
 abstract class mUpload{
 
+    /*
+    |---------------------------
+    | Propertys and Defenitions
+    |---------------------------
+    */
 
     private $set_writable_dir = false;
     private $file_status = array();
@@ -34,13 +39,34 @@ abstract class mUpload{
     protected $allowed_file_extensions = array();
     protected $allowed_file_types = array();
 
+    /*
+    |---------------------------
+    | Constructor
+    |---------------------------
+    */
+
     public function __construct(){}
 
+    /*
+    |---------------------------
+    | Checks if current file extension is allowed
+    | Params: file extension : str
+    | Return: bool
+    |---------------------------
+    */
     private function _check_allowed_extensions($file_extension){
         return (in_array($file_extension,$this->allowed_file_extensions))?
             true:
             false;
     }
+
+    /*
+    |---------------------------
+    | Checks if current file type is allowed
+    | Params: file type : str
+    | Return: bool
+    |---------------------------
+    */
 
     private function _check_allowed_types($file_type){
         return (in_array($file_type,$this->allowed_file_types))?
@@ -48,16 +74,41 @@ abstract class mUpload{
             false;
     }
 
+    /*
+    |---------------------------
+    | Checks if it's a directory
+    | Params: directory : str
+    | Return: bool
+    |---------------------------
+    */
+
     private function _check_if_dir($upload_directory){
         return ( is_dir( $upload_directory ) ) ?
             true:
             false;
     }
 
+    /*
+    |---------------------------
+    | Create a directory
+    | Params: directory : str
+    | Return: bool
+    |---------------------------
+    */
+
     private function _create_dir($upload_directory){
         mkdir($upload_directory, 0777,true);
         $this->set_writable_dir = true;
     }
+
+    /*
+    |---------------------------
+    | 1. Checks if current directory is writable
+    | 1.1. Calls set writable if needed
+    | Params: directory path
+    | Return: bool
+    |---------------------------
+    */
 
     private function _check_if_writable($upload_directory){
         if( !is_writable( $upload_directory ) ) {
@@ -66,19 +117,51 @@ abstract class mUpload{
         return true;
     }
 
+    /*
+    |---------------------------
+    | Sets current directory writable
+    | Params: directory path
+    | Return: null
+    |---------------------------
+    */
+
     private function _set_writable($upload_directory){
         chmod($upload_directory, 0777,true);
         $this->set_writable_dir = true;
     }
 
+    /*
+    |---------------------------
+    | Sets current directory unwritable
+    | Params: directory path
+    | Return: null
+    |---------------------------
+    */
+
     private function _set_unwritable($upload_directory){
-        chmod($upload_directory, 0744);
+        chmod($upload_directory, 0644);
         $this->set_writable_dir = true;
     }
+
+    /*
+    |---------------------------
+    | Parses file path and names
+    | Params: path name
+    | Return: str
+    |---------------------------
+    */
 
     private function _parse_arg($var = '', $separator = ''){
         return preg_replace('|[^a-zA-Z0-9_]|',$separator,$var);
     }
+
+    /*
+    |---------------------------
+    | Gets file extension and file name
+    | Params: complete file name
+    | Return: array
+    |---------------------------
+    */
 
     private function _get_ext_and_name($file_name){
         $file_ext = explode('.',$file_name);
@@ -87,13 +170,22 @@ abstract class mUpload{
         return array(strtolower($file_name),strtolower($file_ext));
     }
 
+    /*
+    |---------------------------
+    | Renames files with an unique combination of numbers
+    | Params: file extension
+    | Return: str
+    |---------------------------
+    */
+
     private function _rename($file_ext){
         return str_replace('.','_',time().'_'.uniqid('',true).'_'.rand(0,2500)).'.'.$file_ext;
     }
 
     /*
     |---------------------------
-    | Processes the files so the output is the following array
+    | Facade that processes the file/files so the output has the following array structure
+    | Params: files : array
     | array(
     |   0 => array(
     |       'name' => 'string',
@@ -106,10 +198,8 @@ abstract class mUpload{
     |
     |---------------------------
     */
+
     private function _process_files($files){
-        // File name
-        // File tmp
-        // File size
 
         $processed_files = array();
 
@@ -164,6 +254,14 @@ abstract class mUpload{
         return $processed_files;
     }
 
+    /*
+    |---------------------------
+    | PHP.org Upload error types for easier debug
+    | Params: error code
+    | Return: str
+    |---------------------------
+    */
+
     private function _error_debug($error_code){
         switch ( $error_code ) {
             case UPLOAD_ERR_OK:
@@ -202,6 +300,19 @@ abstract class mUpload{
         return strtoupper($error);
     }
 
+    /*
+    |---------------------------
+    | Sends a detailed report of the results of the file upload
+    | Return: array
+    | Details:
+    |  1. count of files via HTML
+    |  2. count of how many of those were moved
+    |  3. count the number of errors
+    |  4. detailed list of files that weren't moved + which error triggered this cause
+    |  5. complete details of all files and their status
+    |---------------------------
+    */
+
     public function _debug(){
         return array(
             'file_count' => $this->valid_file_count,
@@ -212,10 +323,18 @@ abstract class mUpload{
         );
     }
 
-    public function upload($files = array(),$destination){
+    /*
+    |---------------------------
+    | File upload facade
+    | Params: files (ex: $_FILES['file']), destination
+    | Return: _debug : array
+    |---------------------------
+    */
+
+    public function upload($files = array(), $destination = 'uploads'){
 
         // trim destination
-        $destination = trim($destination,'/');
+        $destination = trim($destination,DIRECTORY_SEPARATOR);
 
         // parse files
         $files = $this->_process_files($files);
